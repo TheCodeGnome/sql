@@ -109,7 +109,6 @@ erDiagram
 	c ||--o{ cp : bought
 	cp ||--|{ vi : includes
 	cp ||--|{ p : includes
-	cp ||--|| vi : includes
 	cp ||--|| md : on
 	p ||--o{ vi : has
 	md ||--o{ vi : on
