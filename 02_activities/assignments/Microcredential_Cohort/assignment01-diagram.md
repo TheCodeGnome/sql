@@ -104,14 +104,14 @@ erDiagram
 		decimal original_price
 		decimal quantity
 	}
-	c ||--|| pd : has
+	pd ||--|| c : has
+	pc ||--o{ p : has
 	c ||--o{ cp : bought
 	cp ||--|{ vi : includes
 	cp ||--|{ p : includes
 	cp ||--|| vi : includes
 	cp ||--|| md : on
 	p ||--o{ vi : has
-	pc ||--o{ p : has
 	md ||--o{ vi : on
 	v ||--o{ vi : has
 	md ||--|{ vb : on
