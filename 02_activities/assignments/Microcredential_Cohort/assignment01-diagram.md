@@ -105,14 +105,16 @@ erDiagram
 		decimal quantity
 	}
 	c ||--|| pd : has
-	c ||--|{ cp : bought
+	c ||--o{ cp : bought
 	cp ||--|{ vi : includes
-	p ||--|| pc : has
-	v ||--|{ vb : assigned
-	b ||--o{ vb : includes
-	md ||--|{ vb : on
+	cp ||--|{ p : includes
+	cp ||--|| vi : includes
+	cp ||--|| md : on
 	p ||--o{ vi : has
+	pc ||--o{ p : has
 	md ||--o{ vi : on
 	v ||--o{ vi : has
-	p ||--o{ vi : has
+	md ||--|{ vb : on
+	v ||--|{ vb : assigned
+	b ||--o{ vb : includes
 ```
