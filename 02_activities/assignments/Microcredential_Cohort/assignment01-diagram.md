@@ -107,7 +107,7 @@ erDiagram
 	pd ||--|| c : has
 	pc ||--o{ p : has
 	c ||--o{ cp : bought
-	cp ||--|{ p : includes
+	p ||--|{ cp : includes
 	cp ||--|{ vi : includes
 	cp ||--|| md : on
 	p ||--o{ vi : has
