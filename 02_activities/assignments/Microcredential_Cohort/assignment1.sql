@@ -120,8 +120,9 @@ LIMIT 24;
 /* 1. Write a query that determines how many times each vendor has rented a booth 
 at the farmer’s market by counting the vendor booth assignments per vendor_id. */
 --QUERY 8
-
-
+SELECT vendor_id, count(*) AS rental_count
+FROM vendor_booth_assignments
+GROUP BY vendor_id
 
 
 --END QUERY
@@ -133,7 +134,15 @@ of customers for them to give stickers to, sorted by last name, then first name.
 
 HINT: This query requires you to join two tables, use an aggregate function, and use the HAVING keyword. */
 --QUERY 9
-
+SELECT c.customer_id
+	,customer_last_name
+	,customer_first_name
+	,SUM(quantity*cost_to_customer_per_qty) AS total_spend
+FROM customer AS c
+INNER JOIN customer_purchases AS cp ON cp.customer_id = c.customer_id
+GROUP BY c.customer_id
+HAVING total_spend > 2000.0
+ORDER BY customer_last_name COLLATE NOCASE, customer_first_name COLLATE NOCASE;
 
 
 
@@ -152,7 +161,16 @@ When inserting the new vendor, you need to appropriately align the columns to be
 VALUES(col1,col2,col3,col4,col5) 
 */
 --QUERY 10
+DROP TABLE IF EXISTS temp.new_vendor;
 
+--make the table
+CREATE TABLE temp.new_vendor AS
+SELECT *
+FROM vendor;
+
+INSERT INTO temp.new_vendor
+-- typo from above maintained
+VALUES(10,'Thomass Superfood Store','Fresh Focused','Thomas','Rosenthal');
 
 
 
@@ -166,8 +184,11 @@ HINT: you might need to search for strfrtime modifers sqlite on the web to know 
 and year are! 
 Limit to 25 rows of output. */
 --QUERY 11
-
-
+SELECT customer_id
+	,strftime('%m',market_date) AS month
+	,strftime('%Y',market_date) AS year
+FROM customer_purchases
+LIMIT 25;
 
 
 --END QUERY
@@ -180,7 +201,14 @@ HINTS: you will need to AGGREGATE, GROUP BY, and filter...
 but remember, STRFTIME returns a STRING for your WHERE statement...
 AND be sure you remove the LIMIT from the previous query before aggregating!! */
 --QUERY 12
-
+SELECT customer_id
+	,strftime('%m',market_date) AS month
+	,strftime('%Y',market_date) AS year
+	,SUM(quantity*cost_to_customer_per_qty) AS money_spent
+FROM customer_purchases
+WHERE month = '04'
+	AND year = '2022'
+GROUP BY customer_id;
 
 
 
