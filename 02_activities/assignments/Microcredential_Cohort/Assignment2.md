@@ -107,7 +107,7 @@ erDiagram
     w[work_shift]{
         int emp_id pk,fk
         str work_date pk,fk
-        bit is_morning_shift
+        bool is_morning_shift
     }
     o ||--|| b : has
     s ||--|| b : has
