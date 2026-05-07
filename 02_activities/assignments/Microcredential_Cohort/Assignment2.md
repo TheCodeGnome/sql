@@ -75,17 +75,45 @@ erDiagram
         str emp_hire_date
         str emp_job_title
     }
+
+    %% An Order is the bookstore purchasing items for inventory, 
+    %% and are thereby outstanding or completed. Sales, however, 
+    %% are purchases made by Customers.
     o[order] {
         int order_id pk
+        int bk_isbn fk
+        int order_qty
+        float order_unit_price
+        str order_supplier
+        str order_status
     }
+    
+    %% cust_add_id is required if using customer_address type 2 so a given sale 
+    %% can show where it was mailed in the event of a shipped sale
+    %% for customer_address type 1, this data would need to be collected in the 
+    %% given address fields; this model would run counter to normalization
     s[sales] {
         int sales_id pk
+        int cust_id pk, fk
+        int bk_isdn pk, fk
+        date sale_date pk, fk
+        int emp_id pk, fk
+        int item_qty
+        int cust_add_id fk "customer_address_2"
+        str building_number "customer_address_1"
+        str unit_number "customer_address_1"
+        str street_name "customer_address_1"
+        str city "customer_address_1"
+        str country "customer_address_1"
+        str post_code "customer_address_1"
     }
+    
     c[customer] {
         int cust_id pk
         str cust_first_name
         str cust_last_name
     }
+    
     b[book] {
         int bk_isbn pk
         str bk_title
@@ -94,6 +122,7 @@ erDiagram
         float bk_price
         int bk_stock_qty
     }
+    
     d[date] {
         str date pk
         int year
@@ -104,22 +133,69 @@ erDiagram
         str prev_date
         int week_of_year
     }
+    
     w[work_shift]{
         int emp_id pk,fk
         str work_date pk,fk
         bool is_morning_shift
     }
-    o ||--|| b : has
-    s ||--|| b : has
-    e ||--|| s : has
-    c ||--|| s : has
-    d ||--|| o : has
-    d ||--|| e : has
-    d ||--|| s : has
-    d ||--|| b : has
-    w ||--|| e : has
-    w ||--|| d :has
+
+    %% Type 1 - overwrite
+    %% A unique cust_add_id isn't strictly necessary, but it does allow a given user to have
+    %% additional addresses for shipping out gifts to other people
+    ca1[customer_address_1] {
+        id cust_add_id pk
+        id cust_id pk, fk
+        str building_number
+        str unit_number
+        str street_name
+        str city
+        str country
+        str post_code
+        bool is_default_add
+    }
+
+    %% Type 2 - preserved data
+    %% Includes a unique cust_add_id and is_active field to allow for additions without confusion
+    ca2[customer_address_2] {
+        id cust_add_id pk
+        id cust_id pk, fk
+        str building_number
+        str unit_number
+        str street_name
+        str city
+        str country
+        str post_code
+        bool is_default_add
+        bool is_active
+    }
+    o }|--|{ b : has
+    s }|--|{ b : has
+    e ||--|{ s : has
+    c ||--|{ s : has
+    d }|--|{ o : has
+    d }|--|{ e : has
+    d ||--|{ s : has
+    d ||--|{ b : has
+    w }|--|{ e : has
+    w }|--|| d : has
+    c ||--|{ ca1 : has
+    c ||--|{ ca2 : has
+    s ||--|| ca1 : has
 ```
+> ### Notes and comments collected from within the mermaid.md
+>
+> Order table
+>> An Order is the bookstore purchasing items for inventory, and are thereby outstanding or completed. Sales, however, are purchases made by Customers.
+>
+> Sales table
+>> cust_add_id is required if using customer_address type 2 so a given sale can show where it was mailed in the event of a shipped sale for customer_address type 1, this data would need to be collected in the given address fields; this model would run counter to normalization
+>
+> Type 1 - overwrite
+>> A unique cust_add_id isn't strictly necessary, but it does allow a given user to have additional addresses for shipping out gifts to other people
+>
+> Type 2 - preserved data
+>> Includes a unique cust_add_id and is_active field to allow for additions without confusion
 
 ***
 
