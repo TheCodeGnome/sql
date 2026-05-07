@@ -6,7 +6,8 @@
 --SELECT
 /* 1. Write a query that returns everything in the customer table. */
 --QUERY 1
-
+SELECT *
+FROM customer;
 
 
 
@@ -16,7 +17,11 @@
 /* 2. Write a query that displays all of the columns and 10 rows from the customer table, 
 sorted by customer_last_name, then customer_first_ name. */
 --QUERY 2
-
+SELECT *
+FROM customer
+-- Wasn't sure if you wanted us to use case in-sensitive, as da Silva would be pushed to the end otherwise.
+ORDER BY customer_last_name COLLATE NOCASE, customer_first_name COLLATE NOCASE 
+LIMIT 10;
 
 
 
@@ -27,7 +32,10 @@ sorted by customer_last_name, then customer_first_ name. */
 /* 1. Write a query that returns all customer purchases of product IDs 4 and 9. 
 Limit to 25 rows of output. */
 --QUERY 3
-
+SELECT *
+FROM customer_purchases
+WHERE product_id IN (4,9)
+LIMIT 25;
 
 
 
@@ -42,9 +50,10 @@ filtered by customer IDs between 8 and 10 (inclusive) using either:
 Limit to 25 rows of output.
 */
 --QUERY 4
-
-
-
+SELECT *, (quantity * cost_to_customer_per_qty) as price
+FROM customer_purchases
+WHERE customer_id BETWEEN 8 AND 10
+LIMIT 25;
 
 --END QUERY
 
@@ -55,7 +64,12 @@ Using the product table, write a query that outputs the product_id and product_n
 columns and add a column called prod_qty_type_condensed that displays the word “unit” 
 if the product_qty_type is “unit,” and otherwise displays the word “bulk.” */
 --QUERY 5
-
+SELECT product_id, product_name, 
+	CASE 
+		WHEN product_qty_type = "unit" THEN "unit"
+		ELSE "bulk"
+	END	AS prod_qty_type_condensed
+FROM product
 
 
 
@@ -66,7 +80,17 @@ if the product_qty_type is “unit,” and otherwise displays the word “bulk.�
 add a column to the previous query called pepper_flag that outputs a 1 if the product_name 
 contains the word “pepper” (regardless of capitalization), and otherwise outputs 0. */
 --QUERY 6
-
+SELECT product_id, product_name, 
+	CASE 
+		WHEN product_qty_type = "unit" THEN "unit"
+		ELSE "bulk"
+	END	AS prod_qty_type_condensed,
+	CASE
+		-- Could have used "%pepper%" or a similar term, but decided to be mindful of plurals and potential false positives
+		WHEN product_name LIKE "% pepper%" COLLATE NOCASE THEN 1
+		ELSE 0
+	END AS pepper_flag
+FROM product
 
 
 
@@ -77,8 +101,12 @@ contains the word “pepper” (regardless of capitalization), and otherwise out
 /* 1. Write a query that INNER JOINs the vendor table to the vendor_booth_assignments table on the 
 vendor_id field they both have in common, and sorts the result by market_date, then vendor_name.
 Limit to 24 rows of output. */
---QUERY 7
-
+--QUERY 7 
+SELECT vb.*, v.*
+FROM vendor AS v
+	JOIN vendor_booth_assignments AS vb ON v.vendor_id = vb.vendor_id
+ORDER BY market_date, vendor_name
+LIMIT 24;
 
 
 
@@ -92,8 +120,9 @@ Limit to 24 rows of output. */
 /* 1. Write a query that determines how many times each vendor has rented a booth 
 at the farmer’s market by counting the vendor booth assignments per vendor_id. */
 --QUERY 8
-
-
+SELECT vendor_id, count(*) AS rental_count
+FROM vendor_booth_assignments
+GROUP BY vendor_id
 
 
 --END QUERY
@@ -105,7 +134,15 @@ of customers for them to give stickers to, sorted by last name, then first name.
 
 HINT: This query requires you to join two tables, use an aggregate function, and use the HAVING keyword. */
 --QUERY 9
-
+SELECT c.customer_id
+	,customer_last_name
+	,customer_first_name
+	,SUM(quantity*cost_to_customer_per_qty) AS total_spend
+FROM customer AS c
+INNER JOIN customer_purchases AS cp ON cp.customer_id = c.customer_id
+GROUP BY c.customer_id
+HAVING total_spend > 2000.0
+ORDER BY customer_last_name COLLATE NOCASE, customer_first_name COLLATE NOCASE;
 
 
 
@@ -124,7 +161,16 @@ When inserting the new vendor, you need to appropriately align the columns to be
 VALUES(col1,col2,col3,col4,col5) 
 */
 --QUERY 10
+DROP TABLE IF EXISTS temp.new_vendor;
 
+--make the table
+CREATE TABLE temp.new_vendor AS
+SELECT *
+FROM vendor;
+
+INSERT INTO temp.new_vendor
+-- typo from above maintained
+VALUES(10,'Thomass Superfood Store','Fresh Focused','Thomas','Rosenthal');
 
 
 
@@ -138,8 +184,11 @@ HINT: you might need to search for strfrtime modifers sqlite on the web to know 
 and year are! 
 Limit to 25 rows of output. */
 --QUERY 11
-
-
+SELECT customer_id
+	,strftime('%m',market_date) AS month
+	,strftime('%Y',market_date) AS year
+FROM customer_purchases
+LIMIT 25;
 
 
 --END QUERY
@@ -152,7 +201,14 @@ HINTS: you will need to AGGREGATE, GROUP BY, and filter...
 but remember, STRFTIME returns a STRING for your WHERE statement...
 AND be sure you remove the LIMIT from the previous query before aggregating!! */
 --QUERY 12
-
+SELECT customer_id
+	,strftime('%m',market_date) AS month
+	,strftime('%Y',market_date) AS year
+	,SUM(quantity*cost_to_customer_per_qty) AS money_spent
+FROM customer_purchases
+WHERE month = '04'
+	AND year = '2022'
+GROUP BY customer_id;
 
 
 
