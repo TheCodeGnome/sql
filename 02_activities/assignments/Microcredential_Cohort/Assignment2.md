@@ -59,6 +59,68 @@ The store wants to keep customer addresses. Propose two architectures for the CU
 Your answer...
 ```
 
+```mermaid
+---
+title: Bookstore conceptual model
+config:
+  layout: elk
+  look: handDrawn
+  theme: mermaid
+---
+erDiagram
+    e[employee] {
+        int emp_id pk
+        str emp_first_name
+        str emp_last_name
+        str emp_hire_date
+        str emp_job_title
+    }
+    o[order] {
+        int order_id pk
+    }
+    s[sales] {
+        int sales_id pk
+    }
+    c[customer] {
+        int cust_id pk
+        str cust_first_name
+        str cust_last_name
+    }
+    b[book] {
+        int bk_isbn pk
+        str bk_title
+        str bk_author
+        str bk_category
+        float bk_price
+        int bk_stock_qty
+    }
+    d[date] {
+        str date pk
+        int year
+        int month
+        int day
+        int quarter
+        int day_of_year
+        str prev_date
+        int week_of_year
+    }
+    w[work_shift]{
+        int emp_id pk,fk
+        str work_date pk,fk
+        bit is_morning_shift
+    }
+    o ||--|| b : has
+    s ||--|| b : has
+    e ||--|| s : has
+    c ||--|| s : has
+    d ||--|| o : has
+    d ||--|| e : has
+    d ||--|| s : has
+    d ||--|| b : has
+    w ||--|| e : has
+    w ||--|| d :has
+```
+
 ***
 
 ## Section 2:
