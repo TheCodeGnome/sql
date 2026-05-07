@@ -1,24 +1,36 @@
-<?xml version="1.0" encoding="UTF-8"?><sqlb_project><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="12168"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/></tab_structure><tab_browse><table title="booth" custom_title="0" dock_id="2" table="4,5:mainbooth"/><dock_state state="000000ff00000000fd0000000100000002000004a4000003a5fc0100000002fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000000000000000fb000000160064006f0063006b00420072006f00770073006500320100000000000004a40000012300ffffff000004a40000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="INSERT_UPDATE_DELETE*">/* MODULE 5 */
-/* INSERT UPDATE DELETE */
-
-
-DROP TABLE IF EXISTS temp.product_expanded;
-CREATE TEMP TABLE product_expanded AS
-	SELECT * FROM product;
-	
---SELECT * FROM product_expanded
-
-/* 1. add a product to the temp table */
-
-
-
-/* 2. change the product_size for THAT product */
-
-
-
-/* 3. delete the newly added product */
-
-
+<?xml version="1.0" encoding="UTF-8"?><sqlb_project><db path="C:/Users/Mark/src/gh/sql/05_src/sql/farmersmarket.db" readonly="0" foreign_keys="1" case_sensitive_like="0" temp_store="0" wal_autocheckpoint="1000" synchronous="2"/><attached/><window><main_tabs open="structure browser pragmas query" current="3"/></window><tab_structure><column_width id="0" width="300"/><column_width id="1" width="0"/><column_width id="2" width="100"/><column_width id="3" width="8389"/><column_width id="4" width="0"/><expanded_item id="0" parent="1"/><expanded_item id="1" parent="1"/><expanded_item id="2" parent="1"/><expanded_item id="3" parent="1"/><expanded_item id="4" parent="1"/></tab_structure><tab_browse><table title="booth" custom_title="0" dock_id="2" table="4,5:mainbooth"/><dock_state state="000000ff00000000fd0000000100000002000004a4000003a5fc0100000002fb000000160064006f0063006b00420072006f00770073006500310100000000ffffffff0000000000000000fb000000160064006f0063006b00420072006f00770073006500320100000000000004a40000012500ffffff000004a40000000000000004000000040000000800000008fc00000000"/><default_encoding codec=""/><browse_table_settings/></tab_browse><tab_sql><sql name="INSERT_UPDATE_DELETE">/* MODULE 5 */
+/* INSERT UPDATE DELETE */
+
+
+DROP TABLE IF EXISTS temp.product_expanded;
+CREATE TEMP TABLE product_expanded AS
+	SELECT * FROM product;
+	
+--SELECT * FROM product_expanded
+
+/* 1. add a product to the temp table */
+--INSERT
+INSERT INTO product_expanded
+VALUES(24,'Almonds','1 lb',3,'lbs');
+
+
+
+/* 2. change the product_size for THAT product */
+--UPDATE
+UPDATE product_expanded
+SET product_size = '.5 kg', product_qty_type = 'kg'
+WHERE product_id = 24;
+
+
+/* 3. delete the newly added product */
+--DELETE
+
+DELETE FROM product_expanded
+--SELECT * FROM product_expanded -- helping you to determine which rows you are looking at, are they the right rows before you run it
+WHERE product_ID = 24;
+
+
+SELECT * FROM product_expanded
 --------------------------------------------------------------------------------------------------------------------------------------------
 </sql><sql name="vendor_daily_sales_view">/* MODULE 5 */
 /* VIEW */
@@ -54,110 +66,178 @@ CREATE TEMP TABLE product_expanded AS
 
 
 --------------------------------------------------------------------------------------------------------------------------------------------
-</sql><sql name="dynamic_view">/* MODULE 5 */
-/* DYNAMIC VIEW */
-
-
-
-
-
-
-
-
-
-/* spoilers below */
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
--- THIS ONLY WORKS IF YOU HAVE DONE THE PROPER STEPS FOR IMPORTING 
--- 1) update new_customer_purchases to today
--- 2) add the union 
--- 3) add the where statement
--- 4) update the market_date_info to include today
-
-
-
-
+</sql><sql name="dynamic_view*">/* MODULE 5 */
+/* DYNAMIC VIEW */
+
+
+
+
+DROP VIEW IF EXISTS todays_vendor_daily_sales;
+CREATE VIEW IF NOT EXISTS todays_vendor_daily_sales AS
+
+
+SELECT 
+	md.market_date
+	,market_day
+	,market_week
+	,market_year
+	,vendor_name 
+	,SUM(quantity*cost_to_customer_per_qty) as sales
+	
+	
+	FROM market_date_info md
+	INNER JOIN 
+		(SELECT * FROM customer_purchases 
+		UNION 
+		SELECT * FROM new_customer_purchases
+		) cp ON md.market_date = cp.market_date
+	INNER JOIN vendor v
+		ON cp.vendor_id = v.vendor_id
+	
+	WHERE md.market_date = DATE('now','localtime')
+		
+	GROUP BY cp.market_date, v.vendor_id;
+
+
+
+/* spoilers below */
+
+
+
+
+
+
+-- THIS ONLY WORKS IF YOU HAVE DONE THE PROPER STEPS FOR IMPORTING 
+-- 1) update new_customer_purchases to today
+-- 2) add the union 
+-- 3) add the where statement
+-- 4) update the market_date_info to include today
 
 --------------------------------------------------------------------------------------------------------------------------------------------
-</sql><sql name="update_statements_for_view">/* MODULE 5 */
-/* UPDATE statements for view */
-
-
-/* 1. SET market_date equal to today for new_customer_purchases */
-
-
-
-
-/* 2. Add today's info to the market_date_info 
-
-we need to add 
-1. today's date
-2. today's day
-3. today's week number
-4. today's year
-
-INSERT INTO market_date_info
-VALUES('....','....','....','....','8:00 AM','2:00 PM','nothing interesting','Summer','25','28',0,0);
-
-*/
+
+
+--JSON TO TABLE
+
+-- create a temp TABLE
+-- insert the json as &quot;long string&quot; aka BLOB
+-- write a json_each statement
+-- use the json_each statement as a subquery with a json_extract to create our column values 
+
+DROP TABLE IF EXISTS temp.country_json;
+CREATE TEMP TABLE IF NOT EXISTS temp.country_json
+(
+the_json BLOB -- the column and the column type
+);
+
+INSERT INTO temp.country_json
+VALUES(
+'[
+    {
+        &quot;country&quot;: &quot;Afghanistan&quot;,
+        &quot;city&quot;: &quot;Kabul&quot;
+    },
+    {
+        &quot;country&quot;: &quot;Albania&quot;,
+        &quot;city&quot;: &quot;Tirana&quot;
+    }
+]'
+);
+
+SELECT key 
+,JSON_EXTRACT(value,'$.country') as country
+,JSON_EXTRACT(value,'$.city') as city
+
+FROM (
+	SELECT * 
+	FROM country_json,JSON_EACH(country_json.the_json, '$')
+)</sql><sql name="update_statements_for_view">/* MODULE 5 */
+//* UPDATE statements for view */
+
+
+/* 1. SET market_date equal to today for new_customer_purchases */
+UPDATE new_customer_purchases
+SET market_date = DATE('now','localtime')
+
+
+
+/* 2. Add today's info to the market_date_info 
+
+we need to add 
+1. today's date
+2. today's day
+3. today's week number
+4. today's year
+
+*/
+
+INSERT INTO market_date_info
+VALUES('2026-05-06','Wednesday','19','2026','8:00 AM','2:00 PM','nothing interesting','Spring','25','28',0,0);
+
+
  
-
 
 --------------------------------------------------------------------------------------------------------------------------------------------
 </sql><sql name="CROSS_JOIN">/* MODULE 5 */
-/* CROSS  JOIN */
-
-
-/* 1. CROSS JOIN sizes with product*/
-
-DROP TABLE IF EXISTS TEMP.sizes;
-CREATE TEMP TABLE IF NOT EXISTS TEMP.sizes (size TEXT);
-
-INSERT INTO TEMP.sizes
-VALUES('small'),
-('medium'),
-('large');
-
-SELECT * FROM TEMP.sizes;
-
-
-
-
+/* CROSS  JOIN */
+
+
+/* 1. CROSS JOIN sizes with product*/
+
+DROP TABLE IF EXISTS TEMP.sizes;
+CREATE TEMP TABLE IF NOT EXISTS TEMP.sizes (size TEXT);
+
+INSERT INTO TEMP.sizes
+VALUES('small'),
+('medium'),
+('large');
+
+SELECT * FROM TEMP.sizes;
+
+DROP TABLE IF EXISTS TEMP.colours;
+CREATE TEMP TABLE IF NOT EXISTS TEMP.colours (colour TEXT);
+
+INSERT INTO TEMP.colours
+VALUES('red'),
+('green'),
+('purple'),
+('orange');
+
+SELECT * FROM TEMP.sizes;
+SELECT * FROM TEMP.colours;
+
+SELECT product_name, product_qty_type, size---, colour
+FROM product -- 23 rows
+CROSS JOIN temp.sizes -- 3 rows
+-- 3*23 = 69 rows for the cartesian product
+--CROSS JOIN temp.colours -- 4 rows
+--69 *4 = 276 rows for the cartesian product
 --------------------------------------------------------------------------------------------------------------------------------------------
 </sql><sql name="SELF_JOIN">/* MODULE 5 */
-/* SELF JOIN */
-
-
-/* 1. Create a self-joining hierarchy */
-
-DROP TABLE IF EXISTS TEMP.employees;
-CREATE TEMP TABLE TEMP.employees 
-(
-emp_id INT
-,emp_name text
-,mgr_id INT
-);
-
-INSERT INTO TEMP.employees
-VALUES(1,'Thomas',3)
-,(2,'Niyaz', 4)
-,(3,'Rohan', NULL)
-,(4, 'Jennie',3);
-
-SELECT * FROM TEMP.employees;
-</sql><current_tab id="0"/></tab_sql></sqlb_project>
+/* SELF JOIN */
+
+
+/* 1. Create a self-joining hierarchy */
+
+DROP TABLE IF EXISTS TEMP.employees;
+CREATE TEMP TABLE TEMP.employees 
+(
+emp_id INT
+,emp_name text
+,mgr_id INT
+);
+
+INSERT INTO TEMP.employees
+VALUES(1,'Thomas',3)
+,(2,'Niyaz', 4)
+,(3,'Rohan', NULL)
+,(4, 'Jennie',3);
+
+SELECT * FROM TEMP.employees;
+
+SELECT e.emp_name, m.emp_name as mgr_name -- rename the column so its possible to understand the structure
+,coalesce(m.emp_name, e.emp_name) as self_boss -- if you want Rohan to be his own boss
+
+FROM temp.employees AS e
+LEFT JOIN temp.employees AS m 
+	ON e.mgr_id = m.emp_id -- identifying which id is parent and which id is child
+</sql><current_tab id="3"/></tab_sql></sqlb_project>
