@@ -149,8 +149,34 @@ HINT: There are a possibly a few ways to do this query, but if you're struggling
 with a UNION binding them. */
 --QUERY 7
 
+DROP TABLE IF EXISTS temp.sales_by_date
+;
 
+CREATE TEMP TABLE temp.sales_by_date
+AS
+SELECT market_date
+	,ROUND(SUM(cost_to_customer_per_qty*quantity),2) as sales_value
+FROM customer_purchases
+GROUP BY market_date
+;
 
+SELECT * FROM (
+	SELECT * 
+	FROM temp.sales_by_date
+	ORDER BY sales_value ASC
+	LIMIT 1
+)
+UNION
+SELECT * FROM (
+	SELECT *
+	FROM temp.sales_by_date
+	ORDER BY sales_value DESC
+	LIMIT 1
+)
+;
+
+DROP TABLE IF EXISTS temp.sales_by_date
+;
 
 --END QUERY
 
