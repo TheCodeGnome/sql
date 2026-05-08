@@ -196,8 +196,26 @@ How many customers are there (y).
 Before your final group by you should have the product of those two queries (x*y).  */
 --QUERY 8
 
+select count(*) from customer;
+select distinct * 
+from product p join vendor_inventory vi on p.product_id = vi.product_id
+where product_name = "Apple Pie";
+select 18*5*26;
 
-
+SELECT vendor_name
+	,product_name
+	,ROUND(COUNT(customer_id)*5*original_price,2)
+FROM customer
+CROSS JOIN (
+	select DISTINCT vendor_name
+		, product_name
+		, original_price
+	from vendor_inventory vi
+	inner join vendor v on v.vendor_id = vi.vendor_id
+	inner join product p on p.product_id = vi.product_id
+)
+GROUP BY vendor_name,product_name
+;
 
 --END QUERY
 
