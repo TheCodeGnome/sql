@@ -117,11 +117,6 @@ Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR w
 --QUERY 5
 
 SELECT product_name
---	,ifnull(
---		nullif(0,instr(product_name,'-'))
---		,LTRIM(substr(product_name,instr(product_name,'-')),' -')
---	) as description
---	,instr(product_name,'-') as huh
 	,CASE
 		when instr(product_name,'-') > 0 then LTRIM(substr(product_name,instr(product_name,'-')),' - ') 
 		else NULL
@@ -135,8 +130,10 @@ from product
 /* 2. Filter the query to show any product_size value that contain a number with REGEXP. */
 --QUERY 6
 
-
-
+select *
+from product
+where product_size REGEXP '.*[0-9].*'
+;
 
 --END QUERY
 
