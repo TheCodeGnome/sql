@@ -116,7 +116,17 @@ Remove any trailing or leading whitespaces. Don't just use a case statement for 
 Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR will help split the column. */
 --QUERY 5
 
-
+SELECT product_name
+--	,ifnull(
+--		nullif(0,instr(product_name,'-'))
+--		,LTRIM(substr(product_name,instr(product_name,'-')),' -')
+--	) as description
+--	,instr(product_name,'-') as huh
+	,CASE
+		when instr(product_name,'-') > 0 then LTRIM(substr(product_name,instr(product_name,'-')),' - ') 
+		else NULL
+	END as description
+from product
 ;
 
 --END QUERY
