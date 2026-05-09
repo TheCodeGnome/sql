@@ -295,8 +295,30 @@ Finally, make sure you have a WHERE statement to update the right row,
 When you have all of these components, you can run the update statement. */
 --QUERY 12
 
+select * from product_units
 
+-- Test queries for proving the logic works
+-- select distinct product_id from vendor_inventory; -- shows there are only 8 distinct products
 
+ALTER TABLE product_units
+ADD current_quantity INT;
+
+-- use CTE to make the logic more isolated and readable
+-- includes coalesce to protect against NULL, even though there are no nulls in the table
+WITH last_product_quantity AS (
+	-- returns 8 product_ids with the latest date they were offered, and quantity on that date; ie. "the last quantity per product"
+	SELECT 
+		COALESCE(product_id,0) AS prod_id
+		,COALESCE(MAX(market_date),0) AS date
+		,CAST(COALESCE(quantity,0) AS INT) AS qty
+	FROM vendor_inventory
+	GROUP BY product_id
+)
+UPDATE product_units AS pu
+-- use COALESCE on the SET statement to ensure that products that were NEVER sold (not present in the vendor_inventory table)
+-- are reflected to have no current_quantity rather than NULL
+SET current_quantity = COALESCE((SELECT qty FROM last_product_quantity WHERE product_id = prod_id),0)
+;
 
 --END QUERY
 
