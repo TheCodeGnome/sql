@@ -196,12 +196,6 @@ How many customers are there (y).
 Before your final group by you should have the product of those two queries (x*y).  */
 --QUERY 8
 
-select count(*) from customer;
-select distinct * 
-from product p join vendor_inventory vi on p.product_id = vi.product_id
-where product_name = "Apple Pie";
-select 18*5*26;
-
 SELECT vendor_name
 	,product_name
 	,ROUND(COUNT(customer_id)*5*original_price,2)
@@ -227,8 +221,18 @@ It should use all of the columns from the product table, as well as a new column
 Name the timestamp column `snapshot_timestamp`. */
 --QUERY 9
 
+DROP TABLE IF EXISTS product_units;
 
+CREATE TABLE product_units
+AS
+SELECT *
+	, datetime("now") as snapshot_timestamp
+FROM product
+WHERE product_qty_type = "unit"
+;
 
+--select * from product_units;
+--DROP TABLE IF EXISTS product_units;
 
 --END QUERY
 
@@ -237,8 +241,22 @@ Name the timestamp column `snapshot_timestamp`. */
 This can be any product you desire (e.g. add another record for Apple Pie). */
 --QUERY 10
 
-
-
+INSERT INTO product_units
+VALUES(
+	(
+		SELECT product_id FROM product 
+		UNION 
+		SELECT product_id FROM product_units
+		ORDER BY product_id 
+		DESC LIMIT 1
+	) + 1
+	,"Uncle Flim Flom's patented no muss, no fuss, one of a kind, true blue, highest quality snake oil"
+	,"100 ml"
+	,(SELECT product_category_id FROM product_category WHERE product_category_name = "Non-Edible Products")
+	,"unit"
+	,datetime("now")
+)
+;
 
 --END QUERY
 
