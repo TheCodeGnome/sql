@@ -267,8 +267,12 @@ VALUES(
 HINT: If you don't specify a WHERE clause, you are going to have a bad time.*/
 --QUERY 11
 
-
-
+DELETE
+--SELECT *
+FROM product_units
+WHERE product_name like "Uncle Flim Flom's patented no muss, no fuss, one of a kind, true blue, highest quality snake oil"
+	AND product_id = 24
+;
 
 --END QUERY
 
