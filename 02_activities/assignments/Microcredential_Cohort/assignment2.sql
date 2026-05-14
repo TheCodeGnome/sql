@@ -23,8 +23,10 @@ Edit the appropriate columns -- you're making two edits -- and the NULL rows wil
 All the other rows will remain the same. */
 --QUERY 1
 
-
-
+SELECT 
+product_name || ', ' || coalesce(product_size,'')|| ' (' || coalesce(product_qty_type,'unit') || ')'
+FROM product
+;
 
 --END QUERY
 
@@ -41,8 +43,13 @@ HINT: One of these approaches uses ROW_NUMBER() and one uses DENSE_RANK().
 Filter the visits to dates before April 29, 2022. */
 --QUERY 2
 
-
-
+select DISTINCT
+	customer_id
+	, market_date
+	, DENSE_RANK() OVER (PARTITION BY customer_id ORDER BY market_date ASC) as visit_number
+from customer_purchases
+where date(market_date) < date('2022-04-29')
+;
 
 --END QUERY
 
@@ -53,8 +60,28 @@ only the customer’s most recent visit.
 HINT: Do not use the previous visit dates filter. */
 --QUERY 3
 
+DROP TABLE IF EXISTS temp.customer_visits
+;
 
+CREATE TEMP TABLE temp.customer_visits
+AS
+select DISTINCT
+	customer_id
+	, market_date
+	, DENSE_RANK() OVER (PARTITION BY customer_id ORDER BY market_date DESC) as visit_number
+from customer_purchases
+;
 
+select * from temp.customer_visits
+;
+
+select *
+from temp.customer_visits
+where visit_number = 1
+;
+
+DROP TABLE IF EXISTS temp.customer_visits
+;
 
 --END QUERY
 
@@ -66,8 +93,12 @@ You can make this a running count by including an ORDER BY within the PARTITION 
 Filter the visits to dates before April 29, 2022. */
 --QUERY 4
 
-
-
+select DISTINCT customer_id
+	, product_id
+	, count(*) OVER (PARTITION BY customer_id, product_id) as purchase_count
+from customer_purchases
+where date(market_date) < date('2022-04-29')
+;
 
 --END QUERY
 
@@ -85,8 +116,13 @@ Remove any trailing or leading whitespaces. Don't just use a case statement for 
 Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR will help split the column. */
 --QUERY 5
 
-
-
+SELECT product_name
+	,CASE
+		when instr(product_name,'-') > 0 then LTRIM(substr(product_name,instr(product_name,'-')),' - ') 
+		else NULL
+	END as description
+from product
+;
 
 --END QUERY
 
@@ -94,8 +130,10 @@ Hint: you might need to use INSTR(product_name,'-') to find the hyphens. INSTR w
 /* 2. Filter the query to show any product_size value that contain a number with REGEXP. */
 --QUERY 6
 
-
-
+select *
+from product
+where product_size REGEXP '.*[0-9].*'
+;
 
 --END QUERY
 
@@ -111,8 +149,34 @@ HINT: There are a possibly a few ways to do this query, but if you're struggling
 with a UNION binding them. */
 --QUERY 7
 
+DROP TABLE IF EXISTS temp.sales_by_date
+;
 
+CREATE TEMP TABLE temp.sales_by_date
+AS
+SELECT market_date
+	,ROUND(SUM(cost_to_customer_per_qty*quantity),2) as sales_value
+FROM customer_purchases
+GROUP BY market_date
+;
 
+SELECT * FROM (
+	SELECT * 
+	FROM temp.sales_by_date
+	ORDER BY sales_value ASC
+	LIMIT 1
+)
+UNION
+SELECT * FROM (
+	SELECT *
+	FROM temp.sales_by_date
+	ORDER BY sales_value DESC
+	LIMIT 1
+)
+;
+
+DROP TABLE IF EXISTS temp.sales_by_date
+;
 
 --END QUERY
 
@@ -132,8 +196,20 @@ How many customers are there (y).
 Before your final group by you should have the product of those two queries (x*y).  */
 --QUERY 8
 
-
-
+SELECT vendor_name
+	,product_name
+	,ROUND(COUNT(customer_id)*5*original_price,2)
+FROM customer
+CROSS JOIN (
+	select DISTINCT vendor_name
+		, product_name
+		, original_price
+	from vendor_inventory vi
+	inner join vendor v on v.vendor_id = vi.vendor_id
+	inner join product p on p.product_id = vi.product_id
+)
+GROUP BY vendor_name,product_name
+;
 
 --END QUERY
 
@@ -145,8 +221,18 @@ It should use all of the columns from the product table, as well as a new column
 Name the timestamp column `snapshot_timestamp`. */
 --QUERY 9
 
+DROP TABLE IF EXISTS product_units;
 
+CREATE TABLE product_units
+AS
+SELECT *
+	, datetime("now") as snapshot_timestamp
+FROM product
+WHERE product_qty_type = "unit"
+;
 
+--select * from product_units;
+--DROP TABLE IF EXISTS product_units;
 
 --END QUERY
 
@@ -155,8 +241,22 @@ Name the timestamp column `snapshot_timestamp`. */
 This can be any product you desire (e.g. add another record for Apple Pie). */
 --QUERY 10
 
-
-
+INSERT INTO product_units
+VALUES(
+	(
+		SELECT product_id FROM product 
+		UNION 
+		SELECT product_id FROM product_units
+		ORDER BY product_id 
+		DESC LIMIT 1
+	) + 1
+	,"Uncle Flim Flom's patented no muss, no fuss, one of a kind, true blue, highest quality snake oil"
+	,"100 ml"
+	,(SELECT product_category_id FROM product_category WHERE product_category_name = "Non-Edible Products")
+	,"unit"
+	,datetime("now")
+)
+;
 
 --END QUERY
 
@@ -167,8 +267,12 @@ This can be any product you desire (e.g. add another record for Apple Pie). */
 HINT: If you don't specify a WHERE clause, you are going to have a bad time.*/
 --QUERY 11
 
-
-
+DELETE
+--SELECT *
+FROM product_units
+WHERE product_name like "Uncle Flim Flom's patented no muss, no fuss, one of a kind, true blue, highest quality snake oil"
+	AND product_id = 24
+;
 
 --END QUERY
 
@@ -191,8 +295,30 @@ Finally, make sure you have a WHERE statement to update the right row,
 When you have all of these components, you can run the update statement. */
 --QUERY 12
 
+select * from product_units
 
+-- Test queries for proving the logic works
+-- select distinct product_id from vendor_inventory; -- shows there are only 8 distinct products
 
+ALTER TABLE product_units
+ADD current_quantity INT;
+
+-- use CTE to make the logic more isolated and readable
+-- includes coalesce to protect against NULL, even though there are no nulls in the table
+WITH last_product_quantity AS (
+	-- returns 8 product_ids with the latest date they were offered, and quantity on that date; ie. "the last quantity per product"
+	SELECT 
+		COALESCE(product_id,0) AS prod_id
+		,COALESCE(MAX(market_date),0) AS date
+		,CAST(COALESCE(quantity,0) AS INT) AS qty
+	FROM vendor_inventory
+	GROUP BY product_id
+)
+UPDATE product_units AS pu
+-- use COALESCE on the SET statement to ensure that products that were NEVER sold (not present in the vendor_inventory table)
+-- are reflected to have no current_quantity rather than NULL
+SET current_quantity = COALESCE((SELECT qty FROM last_product_quantity WHERE product_id = prod_id),0)
+;
 
 --END QUERY
 
